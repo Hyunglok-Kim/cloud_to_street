@@ -11,10 +11,8 @@
 %-----------------------------------------------------------------%
 clc; clear all
 
-%addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs/SAT_data_related_CODE/');
-addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs')
-addpath('/sfs/qumulo/qproject/hydrosense/shape_files/sudan/') % shpae file of sudan
-addpath('/sfs/qumulo/qproject/hydrosense/shape_files/moza/') % shape file of moza
+addpath('/sfs/qumulo/qproject/hydrosense/shape_files/sudan/') % shpae file for sudan
+addpath('/sfs/qumulo/qproject/hydrosense/shape_files/moza/') % shape file for moza
 shp_file_dir='/sfs/qumulo/qproject/hydrosense/shape_files/';
 
 ifp='/project/hydrosense/matlab/mat/resampled_01/flood_movie/'; % input folder
@@ -23,8 +21,8 @@ ofp='/project/hydrosense/to_OUTSIDE/'; % output folder
 %%
 study_area='sudan';
 no_data_mask=[0 0 0 0 0]; % if no data, set element with 1. [ASCAT, AMSR2, SMOS, SMAP, CYGNSS]
-mv_day=2;
-run_hour=3;
+% As Venkat recommended, if you don't need CYGNSS, set no_data_mask as [0 0 0 0 1]
+mv_day=2; %run_hour=3;
 
 if strfind(study_area,'moza')
     year_=2019;
@@ -43,7 +41,7 @@ if strfind(study_area,'moza')
     
 elseif strfind(study_area, 'sudan')
     year_=2019;
-    start_doy=210; end_doy=250; %210; 250
+    start_doy=210; end_doy=250; % expected dates of flooding +/-
     mapping_start_doy=220; mapping_end_doy=244;
     
     % h-box scale
