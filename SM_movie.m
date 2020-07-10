@@ -5,7 +5,6 @@ addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs/mapping_code/');
 addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs')
 addpath('/sfs/qumulo/qproject/hydrosense/shape_files/sudan/') % shpae file of sudan
 addpath('/sfs/qumulo/qproject/hydrosense/shape_files/moza/') % shape file of moza
-
 shp_file_dir='/sfs/qumulo/qproject/hydrosense/shape_files/';
 ifp='/project/hydrosense/matlab/mat/resampled_01/flood_movie/'; % input folder
 ofp='/project/hydrosense/to_OUTSIDE/'; % output folder
