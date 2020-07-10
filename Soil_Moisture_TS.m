@@ -1,24 +1,34 @@
+%--------------------------BEGIN NOTE------------------------------%
+% University of Virginia
+%--------------------------END NOTE--------------------------------%
+% INPUT DATA:
+% All soil moisture data with 3d format (n:lat, m:lon, z: value)
+%
+% DESCRIPTION:
+%
+% REVISION HISTORY: 
+% 9 Jul 2020 Hyunglok Kim; initial specification
+%-----------------------------------------------------------------%
 clc; clear all
 
-addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs/SAT_data_related_CODE/');
-addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs/mapping_code/');
+%addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs/SAT_data_related_CODE/');
 addpath('/sfs/qumulo/qproject/hydrosense/matlab/libs')
 addpath('/sfs/qumulo/qproject/hydrosense/shape_files/sudan/') % shpae file of sudan
 addpath('/sfs/qumulo/qproject/hydrosense/shape_files/moza/') % shape file of moza
-
 shp_file_dir='/sfs/qumulo/qproject/hydrosense/shape_files/';
+
 ifp='/project/hydrosense/matlab/mat/resampled_01/flood_movie/'; % input folder
 ofp='/project/hydrosense/to_OUTSIDE/'; % output folder
 
 %%
 study_area='sudan';
-no_data_mask=[0 0 0 0 0]; % if no data, set to 1 ASCAT, AMSR2, SMOS, SMAP, CYGNSS
+no_data_mask=[0 0 0 0 0]; % if no data, set element with 1. [ASCAT, AMSR2, SMOS, SMAP, CYGNSS]
 mv_day=2;
 run_hour=3;
 
 if strfind(study_area,'moza')
     year_=2019;
-    start_doy=60; end_doy=95;
+    start_doy=60; end_doy=95; % expected dates of flooding +/-
     mapping_start_doy=63; mapping_end_doy=85;
     a1=26;a2=30;
     b1=27;b2=34;
@@ -55,10 +65,10 @@ elseif strfind(study_area, 'sudan')
     Run_domain_upper_right_lon=35;
     shp_file_name='sdn_admbndl_admALL_cbs_nic_ssa_itos_20200317.shp';
 end
-Run_domain_resolution_dx=0.1;
-Run_domain_resolution_dy=0.1;
+% target resolution for mapping
+Run_domain_resolution_dx=0.1;Run_domain_resolution_dy=0.1;
 
-hh_start_doy=(start_doy-1)*48+1;
+hh_start_doy=(start_doy-1)*48+1; %half-hour temporal resolution
 hh_end_doy=end_doy*48;
 
 temp_lat=Run_domain_upper_right_lat:-Run_domain_resolution_dy:Run_domain_lower_left_lat;
@@ -97,7 +107,6 @@ for i=hh_start_doy:hh_end_doy
     %end
 end
 % load data
-clc
 t_SM=load([iifp,'ASCAT/ASCAT_SM_',num2str(year_),'.mat']);
 ASCAT_SM=t_SM.ASCAT_SM;
 
@@ -122,7 +131,7 @@ SMAP_SM_ASC=t_SM.SMAP_SM;
 t_SM=load([iifp,'CYGNSS/CYGNSS_SM_',num2str(year_),'_sub_daily.mat']);
 CYGNSS_SM=t_SM.CYGNSS_SM;
 
-% rescale to reference data. 
+% rescale to the reference data
 ref_data=ASCAT_SM;%it can be any data; SMAP_SM_DES;
 
 r_ASCAT_SM=[];
@@ -130,7 +139,7 @@ r_AMSR2_SM_DES=[]; r_AMSR2_SM_ASC=[];
 r_SMOS_SM_DES=[]; r_SMOS_SM_ASC=[];
 r_SMAP_SM_DES=[]; r_SMAP_SM_ASC=[];
 r_CYGNSS_SM=[];
-%
+
 for i=1:size(ref_data,1)
     for j=1:size(ref_data,2)
         t_ref=squeeze(ref_data(i,j,:));
@@ -201,7 +210,7 @@ for i=1:size(ref_data,1)
     end
 end
 
-% mkae half-houlry data
+% Fill soil moisture data and make half-houlry data (basic)
 hh_SM=nan([size(ref_data,1), size(ref_data,2), size(ref_data,3)*48]);
 
 if no_data_mask(1)~=1
@@ -249,94 +258,22 @@ end
 
 % calculate moving average data
 [~, m_SM]=ano_coarse(f_SM(:,:,hh_start_doy:hh_end_doy), mv_day*48);
-%
-% t=squeeze(hh_SM(10,10,:));
-% plot(1:numel(t), t,'o');
-% hold on
-%t=squeeze(m_SM(10,10,:));
-%plot(1:numel(t), t,'x');
-% check spatail averaged SM data
-%% make movie
-%a1=24;a2=27;
-%b1=25;b2=28;
 
-a1=23;a2=45;
-b1=20;b2=38;
-
-i=(mapping_start_doy-start_doy)*48+1; %mv_day/2*48+1;
-target=m_SM(a1:a2,b1:b2,i);
-%max_t=max(target(:));
-%min_t=min(target(:));
-
-target(target>=0.4)=0.4; target(target<0)=0;
-%target(1)=min_t; target(2)=max_t;
-target(1)=0; target(2)=0.4;
-%%
-Statistic_Mapping_10km_flood(target,target_lat(a1:a2,b1:b2),target_lon(a1:a2,b1:b2));
-load coastlines
-plotm(coastlat, coastlon, 'linewidth',1,'color','k')
-title(title_list{i,1},'Units','normalized','position',[0.5 title_position],'fontsize',20, 'fontname','times new roman')
-
-t=shaperead([shp_file_dir,study_area,'/',shp_file_name]);
-map_x=[]; map_y=[];
-
-for i=1:size(t)
-    t_x=t(i).X; t_y=t(i).Y;
-    map_x=[map_x, t_x];
-    map_y=[map_y, t_y];
-    hold on
-end
-plotm(map_y, map_x,'color','k')
-hold on
-
-for i=1:4
-    geoshow(box2(i,2),box2(i,1),'DisplayType','Point','Marker','p','markeredgecolor',[0 0 0],'markersize',15,'linewidth',2.5)
-    geoshow(box1(i,2),box1(i,1),'DisplayType','Point','Marker','.','markeredgecolor','black','markersize',15,'linewidth',2.5)
-end
-%
-set(gca, 'plotboxaspectratio',[r1,r2,1])
- 
-%geoshow(15.25,32.69,'DisplayType','Point','Marker','p','markeredgecolor','black','markersize',25,...
-%    'linewidth',2.5)
-
-gif([ofp, study_area,'_SM_city_',num2str(no_data_mask(1)),num2str(no_data_mask(2)),num2str(no_data_mask(3)),...
-    num2str(no_data_mask(4)),num2str(no_data_mask(5)),'.gif'],'DelayTIme',0.1)
-for i=(mapping_start_doy-start_doy)*48+2:run_hour*2:(mapping_end_doy-start_doy+1)*48
-    target=m_SM(a1:a2,b1:b2,i);
-    target(target>0.4)=0.4;
-    surfm(target_lat(a1:a2,b1:b2), target_lon(a1:a2,b1:b2), target)
-    %geoshow(15.25,32.69,'DisplayType','Point','Marker','p','markeredgecolor','black','markersize',25,...
-    %    'linewidth',2.5)
-    title(title_list{i,1},'Units','normalized','position',[0.5 title_position 1],'fontsize',20, 'fontname','times new roman')
-    %load coastlines
-    %plotm(coastlat, coastlon, 'linewidth',1.5,'color','k')
-    plotm(map_y, map_x,'color','k')
-    %set(gcf,'units','normalized','outerposition',[0 0 1 1])
-    %set(h, 'title',title_list{i,1})
-    
-    for i=1:4
-        geoshow(box2(i,2),box2(i,1),'DisplayType','Point','Marker','p','markeredgecolor',[0 0 0],'markersize',15,'linewidth',2.5)
-        geoshow(box1(i,2),box1(i,1),'DisplayType','Point','Marker','.','markeredgecolor','black','markersize',15,'linewidth',2.5)
-    end
-
-    i
-    gif
-end
 %% time series avg SM
 % calculate 95% of SM
 t_ASCAT_SM=ASCAT_SM(a1:a2, b1:b2,:);
-tt__SM=[];
+foo_SM=[];
 for i=1:size(t_ASCAT_SM,3)
     t=t_ASCAT_SM(:,:,i);
-    tt__SM(i)=nanmean(t(:));
+    foo_SM(i)=nanmean(t(:));
 end
 %t_ASCAT_SM=t_ASCAT_SM(:);
-tt__SM=sort(tt__SM);
+foo_SM=sort(foo_SM);
 p_ASCAT_SM=[];
-for i=1:numel(tt__SM)
-    p_ASCAT_SM(i)=i/numel(tt__SM);
+for i=1:numel(foo_SM)
+    p_ASCAT_SM(i)=i/numel(foo_SM);
 end
-t_max=tt__SM(min(find(p_ASCAT_SM>0.95)))
+t_max=foo_SM(min((p_ASCAT_SM>0.95)));
 
 t_avg=[]; k=1;
  for i=(mapping_start_doy-start_doy)*48+1:(mapping_end_doy-start_doy+1)*48
@@ -344,58 +281,17 @@ t_avg=[]; k=1;
      t_avg(k)=nanmean(t(:));
      k=k+1;
  end
-% SM TS avg
-figure(1)
-filename = [ofp,study_area,'_TS_SM_all_',num2str(no_data_mask(1)),num2str(no_data_mask(2)),num2str(no_data_mask(3)),...
-    num2str(no_data_mask(4)),num2str(no_data_mask(5)),'_city.gif'];
-k=1;
-for i=(mapping_start_doy-start_doy)*48+1:run_hour*2:(mapping_end_doy-start_doy+1)*48
-    if k==1
-        
-        plot(title_num((mapping_start_doy-start_doy)*48+1:(mapping_end_doy-start_doy+1)*48),t_avg, 'linewidth',1, 'color','k')
-        ylim([0.2 0.35])
-        datetick('x','mm-dd')
-        set(gca,'fontweight','bold', 'fontsize',20)     
-        ylabel('Soil Moisture (m^3/m^3)','fontsize',30)
-        ay=get(gca,'YtickLabel');
-        set(gca, 'YtickLabel',ay,'fontsize',25)
-        grid on      
-       
-        set(gcf,'units','normalized','outerposition',[0 0 0.5 1])
-        title({'Khartoum (Urban+Agriculture)','-Soil Moisture'},'fontsize',35)
-        %title('Khartoum (Urban)-Soil Moisture','fontsize',35)
-
-    else
-        hold on
-        plot(title_num((mapping_start_doy-start_doy)*48+1:(mapping_end_doy-start_doy+1)*48),t_avg, 'linewidth',1, 'color','k')
-        ylim([0.2 0.35])
-        datetick('x','mm-dd')
-        set(gca,'fontweight','bold', 'fontsize',20)
-        ylabel('Soil Moisture (m^3/m^3)','fontsize',30)
-        ay=get(gca,'YtickLabel');
-        set(gca, 'YtickLabel', ay,'fontsize',25)
-        grid on       
-
-        set(gcf,'units','normalized','outerposition',[0 0 0.5 1])
-        title({'Khartoum (Urban+Agriculture)','-Soil Moisture'},'fontsize',35)
-        %title('Khartoum (Urban)-Soil Moisture','fontsize',35)
-
-        if t_max<=t_avg(k*run_hour*2)
-            plot(title_num(i),t_avg(k*run_hour*2),'ko','markerfacecolor',[0.8 0.3 0.3],'markersize',10)
-        else
-            plot(title_num(i),t_avg(k*run_hour*2),'ko','markerfacecolor',[0.3 0.3 0.8])
-        end
-    end
-    box on
-    drawnow
-    frame = getframe(1);
-    im = frame2im(frame);
-    [imind,cm] = rgb2ind(im,256);
-    if k == 1
-        imwrite(imind,cm,filename,'gif', 'Loopcount',inf, 'DelayTime',0.1);
-    else
-        imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.1);
-    end
-    
-    k=k+1;
-end
+ %% plot the soil moisture TS
+ plot(title_num((mapping_start_doy-start_doy)*48+1:(mapping_end_doy-start_doy+1)*48),t_avg, 'linewidth',1, 'color','k')
+ ylim([0.2 0.35])
+ datetick('x','mm-dd')
+ set(gca,'fontweight','bold', 'fontsize',20)
+ ylabel('Soil Moisture (m^3/m^3)','fontsize',30)
+ ay=get(gca,'YtickLabel');
+ set(gca, 'YtickLabel',ay,'fontsize',25)
+ grid on
+ 
+ set(gcf,'units','normalized','outerposition',[0 0 0.5 1])
+ title({'Khartoum (Urban+Agriculture)','-Soil Moisture'},'fontsize',35)
+ %title('Khartoum (Urban)-Soil Moisture','fontsize',35)
+ 
