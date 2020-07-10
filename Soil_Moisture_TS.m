@@ -63,15 +63,9 @@ elseif strfind(study_area, 'sudan')
     Run_domain_upper_right_lon=35;
     shp_file_name='sdn_admbndl_admALL_cbs_nic_ssa_itos_20200317.shp';
 end
-% target resolution for mapping
-Run_domain_resolution_dx=0.1;Run_domain_resolution_dy=0.1;
 
 hh_start_doy=(start_doy-1)*48+1; %half-hour temporal resolution
 hh_end_doy=end_doy*48;
-
-temp_lat=Run_domain_upper_right_lat:-Run_domain_resolution_dy:Run_domain_lower_left_lat;
-temp_lon=Run_domain_lower_left_lon:Run_domain_resolution_dx:Run_domain_upper_right_lon;
-[target_lon,target_lat]=meshgrid(temp_lon,temp_lat);
 
 % make title
 title_list=[]; k=1;
