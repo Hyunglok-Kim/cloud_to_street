@@ -9,7 +9,7 @@
 % REVISION HISTORY: 
 % 9 Jul 2020 Hyunglok Kim; initial specification
 %-----------------------------------------------------------------%
-clc; clear all
+clc; clear
 
 addpath('/sfs/qumulo/qproject/hydrosense/shape_files/sudan/') % shpae file for sudan
 addpath('/sfs/qumulo/qproject/hydrosense/shape_files/moza/') % shape file for moza
@@ -71,7 +71,7 @@ hh_end_doy=end_doy*48;
 title_list=[]; k=1;
 title_num=[];
 for i=hh_start_doy:hh_end_doy
-    %for j=1:48
+    
     t=datevec(datenum(year_,1,1)+i/48);
     t_year=num2str(t(1));
     t_month=num2str(t(2));
@@ -96,9 +96,10 @@ for i=hh_start_doy:hh_end_doy
     title_list{k,1}=[t_year,'/',t_month,'/',t_day,'/',t_hr,':',t_mn];
     title_num(k,1)=datenum(t);
     k=k+1;
-    %end
+    
 end
-% load data
+
+% load all data
 t_SM=load([iifp,'ASCAT/ASCAT_SM_',num2str(year_),'.mat']);
 ASCAT_SM=t_SM.ASCAT_SM;
 
@@ -124,7 +125,7 @@ t_SM=load([iifp,'CYGNSS/CYGNSS_SM_',num2str(year_),'_sub_daily.mat']);
 CYGNSS_SM=t_SM.CYGNSS_SM;
 
 % rescale to the reference data
-ref_data=ASCAT_SM;%it can be any data; SMAP_SM_DES;
+ref_data=ASCAT_SM; % it can be any data
 
 r_ASCAT_SM=[];
 r_AMSR2_SM_DES=[]; r_AMSR2_SM_ASC=[];
